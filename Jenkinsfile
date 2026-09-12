@@ -40,10 +40,17 @@ pipeline {
             }
         }
         stage("deploy") {
-
+            input {
+                message "Select the environmet to deploy to.."
+                ok "Done"
+                    parameters {
+                         choice(name: 'VERSION', choices: ['1.1.0','1.2.0','1.3.0'], description:'')
+                    }
+            }
             steps {
                 script{
                     gv.deployApp()
+                    echo "Deployig to ${ENV}"
                 }
             }
         }
