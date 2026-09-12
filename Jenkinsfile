@@ -44,7 +44,7 @@ pipeline {
                 message "Select the environmet to deploy to.."
                 ok "Done"
                     parameters {
-                         choice(name: 'VERSION', choices: ['dev','staging','prod'], description:'')
+                         choice(name: 'ENV', choices: ['dev','staging','prod'], description:'')
                     }
             }
             steps {
