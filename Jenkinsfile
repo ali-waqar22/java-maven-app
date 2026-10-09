@@ -1,39 +1,49 @@
+#!/usr/bin/env groovy
+
+library identifier: 'jenkins-shared-library@main', retriever: modernSCM(
+    [$class: 'GitSCMSource',
+    remote: 'https://github.com/ali-waqar22/jenkins-shared-library.git',
+    credentialsId: 'github-credentials'
+    ]
+)
+
 pipeline {
 
     agent any
+    tools {
+        maven 'Maven'
+    }
+    environment{
+        IMAGE_NAME = ' aliwaqarbulc/demo-app:jma-3.0'
+    }
 
     stages {
-
-        stage("test") {
-
+        stage("build app") {
             steps {
-                script{
-                  echo "testing the application..."
-                  echo "Executing pipeline for the branch $BRANCH_NAME ..."
+                 script{
+                  echo "building the application jar..."
+                   buidJar()
                 }
             }
         }
-        stage("build") {
-            when {
-                expression {
-                    BRANCH_NAME == 'main' || BRANCH_NAME == 'master'
-                }
-            }
+        stage("build image") {
             steps {
                  script{
-                  echo "building the application..."
+                  echo "building the docker image..."
+                   buidImage(env.IMAGE_NAME)
+                   dockerLogin()
+                   dockerPush(env.IMAGE_NAME)
                 }
             }
         }
         stage("deploy") {
-            when {
-                expression {
-                    BRANCH_NAME == 'main' || BRANCH_NAME == 'master'
-                }
-            }
             steps {
                 script{
-                 echo "deploying the application..."
+                 echo "deploying docker image to EC2...."
+                 def dockerCmd = "docker run -p 3080:3080 -d ${IMAGE_NAME}"
+                 sshagent (['ec2-server-key']) {   
+                     sh "ssh -o StrictHostKeyChecking=no ec2-user@65.2.5.28 ${dockerCmd}" 
+                    }
                 }
             }
         }
