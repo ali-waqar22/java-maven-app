@@ -11,10 +11,10 @@ pipeline {
 
     agent any
     tools {
-        maven 'Maven'
+        maven 'maven-3.9'
     }
     environment{
-        IMAGE_NAME = ' aliwaqarbulc/demo-app:jma-3.0'
+        IMAGE_NAME = 'aliwaqarbulc/demo-app:jma-3.0'
     }
 
     stages {
@@ -22,7 +22,7 @@ pipeline {
             steps {
                  script{
                   echo "building the application jar..."
-                   buidJar()
+                   buildJar()
                 }
             }
         }
@@ -30,7 +30,7 @@ pipeline {
             steps {
                  script{
                   echo "building the docker image..."
-                   buidImage(env.IMAGE_NAME)
+                   buildImage(env.IMAGE_NAME)
                    dockerLogin()
                    dockerPush(env.IMAGE_NAME)
                 }
