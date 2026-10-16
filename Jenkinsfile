@@ -72,23 +72,30 @@ pipeline {
         }
         
         stage ("commit version update"){
-            steps {
-                script{
-                    withCredentials ([usernamePassword(credentialsId:'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh 'git config --global user.email "aliwaqar.cys@gmail.com"'
-                        sh 'git config --global user.name "Ali Waqar"'
-
-                        sh 'git status'
-                        sh 'git branch'
-                        sh 'git config --list'
-
-                        sh 'git remote set-url origin "https://${USER}:${PASS}@github.com/ali-waqar22/java-maven-app.git"'
-                        sh 'git add .'
-                        sh 'git commit -m "CI: Update version"'
-                        sh 'git push origin HEAD:jenkins-jobs-2'
+                    steps {
+                        script{
+                            withCredentials ([usernamePassword(credentialsId:'github-credentials', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
+                                
+                                sh '''
+                                    git config --global user.email "aliwaqar.cys@gmail.com"
+                                    git config --global user.name "Ali Waqar"
+        
+                                    git status
+                                    git branch
+                                    
+                                    # 1. Reset the URL to a clean state without any passwords inside it
+                                    git remote set-url origin https://github.com/ali-waqar22/java-maven-app.git
+                                    
+                                    # 2. Tell Git to securely pull the credentials from the environment variables
+                                    git config --local credential.helper "!f() { echo username=$GIT_USER; echo password=$GIT_PASS; }; f"
+                                    
+                                    git add .
+                                    git commit -m "CI: Update version"
+                                    git push origin HEAD:jenkins-jobs-2
+                                '''
+                            }
+                        }
                     }
                 }
-            }
-        }
     }
 }
