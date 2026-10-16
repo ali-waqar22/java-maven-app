@@ -74,7 +74,7 @@ pipeline {
         stage ("commit version update"){
             steps {
                 script{
-                    withCredentials ([usernamePassword(credentialsId:'github-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                    withCredentials ([usernamePassword(credentialsId:'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                         sh 'git config --global user.email "aliwaqar.cys@gmail.com"'
                         sh 'git config --global user.name "Ali Waqar"'
 
