@@ -1,7 +1,7 @@
 version: '5.6'
 services:
     java-maven-app:
-      image: aliwaqarbulc/demo-app:jma-3.0
+      image: ${IMAGE}
       ports:
         - 8080:8080
 
