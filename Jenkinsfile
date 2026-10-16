@@ -13,11 +13,27 @@ pipeline {
     tools {
         maven 'maven-3.9'
     }
-    environment{
-        IMAGE_NAME = 'aliwaqarbulc/demo-app:jma-3.0'
-    }
 
     stages {
+        
+        stage("increment version"){
+            steps {
+                script{
+                    echo 'incrementing app version...'
+                    // Use Groovy triple-single-quotes for clean multi-line shell commands
+                    // Use standard single-quotes around the Maven argument to protect the $ from Bash
+                    sh '''
+                        mvn build-helper:parse-version versions:set \
+                        '-DnewVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.${parsedVersion.incrementalVersion}' \
+                        versions:commit
+                    '''
+                    def matcher = readFile('pom.xml') =~ `<version>(.+)<\version>`
+                    def version =matcher[0][1]
+                    env.IMAGE_NAME = "$version - $BUILD_NUMBER"
+                }
+            }
+        }
+        
         stage("build app") {
             steps {
                  script{
@@ -26,6 +42,7 @@ pipeline {
                 }
             }
         }
+        
         stage("build image") {
             steps {
                  script{
@@ -36,14 +53,39 @@ pipeline {
                 }
             }
         }
+        
         stage("deploy") {
             steps {
                 script{
                  echo "deploying docker image to EC2...."
-                 def dockerComposeCmd = "docker-compose -f docker-compose.yaml up -d"
+                    
+                 def shellCmd = "bash ./server-cmds.sh ${IMAGE_NAME}"
+                 def ec2Instance = "ec2-user@13.201.74.131"
+                    
                  sshagent (['ec2-server-key']) {   
-                     sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ec2-user@43.204.236.249:/home/ec2-user"
-                     sh "ssh -o StrictHostKeyChecking=no ec2-user@43.204.236.249 ${dockerComposeCmd}" 
+                     sh "scp -o StrictHostKeyChecking=no server-cmds.sh ${ec2Instance}:/home/ec2-user"
+                     sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${ec2Instance}:/home/ec2-user"
+                     sh "ssh -o StrictHostKeyChecking=no ${ec2Instance} ${shellCmd}" 
+                    }
+                }
+            }
+        }
+        
+        stage ("commit version update"){
+            steps {
+                script{
+                    withCredentials ([usernamePassword(credentialsId:'github-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'git config --global user.email "aliwaqar.cys@gmail.com"'
+                        sh 'git config --global user.name "Ali Waqar"'
+
+                        sh 'git status'
+                        sh 'git branch'
+                        sh 'git config --list'
+
+                        sh 'git remote set-url origin https://${USER}:${PASS}@github.com/ali-waqar22/java-maven-app.git'
+                        sh 'git add .'
+                        sh 'git commit -m "CI: Update version"'
+                        sh 'git push origin HEAD:jenkins-jobs'
                     }
                 }
             }
